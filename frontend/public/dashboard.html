@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guardian Eye - Web Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #0D1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      color: #58a6ff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .shield-icon {
+      width: 32px;
+      height: 32px;
+      background: #238636;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .auth-container {
+      max-width: 400px;
+      margin: 100px auto;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 32px;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-header h2 {
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .auth-header p {
+      color: #6e7681;
+      font-size: 14px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #c9d1d9;
+      font-size: 14px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      background: #0D1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 14px;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #238636;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn:hover {
+      background: #2ea043;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-danger {
+      background: #da3633;
+    }
+
+    .btn-danger:hover {
+      background: #f85149;
+    }
+
+    .btn-secondary {
+      background: #21262d;
+    }
+
+    .btn-secondary:hover {
+      background: #30363d;
+    }
+
+    .error-message {
+      background: #da3633;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .success-message {
+      background: #238636;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .dashboard {
+      display: none;
+    }
+
+    .dashboard.active {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-card h3 {
+      color: #6e7681;
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .stat-card p {
+      color: #fff;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    .device-list {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .device-item {
+      background: #0D1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .device-info h4 {
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .device-info p {
+      color: #6e7681;
+      font-size: 14px;
+    }
+
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-normal {
+      background: #238636;
+      color: white;
+    }
+
+    .status-stolen {
+      background: #da3633;
+      color: white;
+    }
+
+    .status-locked {
+      background: #f85149;
+      color: white;
+    }
+
+    .control-panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+
+    .control-panel h3 {
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .control-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .user-info {
+      color: #6e7681;
+      font-size: 14px;
+    }
+
+    .logout-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      padding: 8px 16px;
+      border-radius: 6px;
+      color: #c9d1d9;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      background: #30363d;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Form -->
+  <div id="loginContainer" class="auth-container">
+    <div class="auth-header">
+      <div class="shield-icon">🛡️</div>
+      <h2 style="margin-top: 16px;">Guardian Eye Dashboard</h2>
+      <p>Monitor and protect your devices</p>
+    </div>
+
+    <div id="loginError" class="error-message hidden"></div>
+
+    <form id="loginForm">
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="email">
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn">Sign In</button>
+    </form>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="dashboard">
+    <div class="header">
+      <h1>
+        <div class="shield-icon">🛡️</div>
+        Guardian Eye Dashboard
+      </h1>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <span class="user-info" id="userEmail"></span>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Devices</h3>
+          <p id="totalDevices">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Active Devices</h3>
+          <p id="activeDevices">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Stolen Devices</h3>
+          <p style="color: #da3633;" id="stolenDevices">0</p>
+        </div>
+      </div>
+
+      <!-- Device List -->
+      <div class="device-list">
+        <h3 style="color: #fff; margin-bottom: 16px;">Your Devices</h3>
+        <div id="deviceListContainer">
+          <p style="color: #6e7681; text-align: center; padding: 24px;">Loading devices...</p>
+        </div>
+      </div>
+
+      <!-- Control Panel (shown when device selected) -->
+      <div id="controlPanel" class="control-panel hidden">
+        <h3>Device Controls</h3>
+        <p style="color: #6e7681; margin-bottom: 16px;">Selected: <span id="selectedDeviceName"></span></p>
+        
+        <div class="control-buttons">
+          <button class="btn btn-danger" onclick="markAsStolen()">Mark as Stolen</button>
+          <button class="btn btn-danger" onclick="lockDevice()">Lock Device</button>
+          <button class="btn btn-secondary" onclick="markAsNormal()">Mark as Normal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDCc8qBTWxO-sX5dhlC6mDWokomgScIFwQ",
+      authDomain: "guardianeye-feb2d.firebaseapp.com",
+      databaseURL: "https://guardianeye-feb2d-default-rtdb.firebaseio.com",
+      projectId: "guardianeye-feb2d",
+      storageBucket: "guardianeye-feb2d.firebasestorage.app",
+      messagingSenderId: "30330527225",
+      appId: "1:30330527225:android:c25584291fc2e776dcf128"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    let currentUser = null;
+    let selectedDeviceId = null;
+
+    // Check auth state
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        showDashboard(user);
+      } else {
+        showLogin();
+      }
+    });
+
+    // Login form handler
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('loginError');
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        errorDiv.classList.add('hidden');
+      } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.classList.remove('hidden');
+      }
+    });
+
+    function showLogin() {
+      document.getElementById('loginContainer').style.display = 'block';
+      document.getElementById('dashboard').classList.remove('active');
+    }
+
+    function showDashboard(user) {
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('dashboard').classList.add('active');
+      document.getElementById('userEmail').textContent = user.email;
+      loadDevices(user.uid);
+    }
+
+    async function loadDevices(userId) {
+      const userDevicesRef = ref(database, `users/${userId}/devices`);
+      
+      onValue(userDevicesRef, async (snapshot) => {
+        const deviceIds = snapshot.val();
+        const container = document.getElementById('deviceListContainer');
+        
+        if (!deviceIds) {
+          container.innerHTML = '<p style="color: #6e7681; text-align: center; padding: 24px;">No devices registered yet. Sign in from the mobile app to register your device.</p>';
+          updateStats(0, 0, 0);
+          return;
+        }
+
+        const deviceIdList = Object.keys(deviceIds);
+        let devices = [];
+        
+        // Load each device's data
+        for (const deviceId of deviceIdList) {
+          const deviceRef = ref(database, `devices/${deviceId}`);
+          const deviceSnapshot = await get(deviceRef);
+          if (deviceSnapshot.exists()) {
+            devices.push({ id: deviceId, ...deviceSnapshot.val() });
+          }
+        }
+
+        // Display devices
+        container.innerHTML = '';
+        devices.forEach(device => {
+          const deviceDiv = document.createElement('div');
+          deviceDiv.className = 'device-item';
+          deviceDiv.innerHTML = `
+            <div class="device-info">
+              <h4>${device.deviceName || 'Unknown Device'}</h4>
+              <p>${device.modelName} • ${device.osName} ${device.osVersion}</p>
+              <p style="font-size: 12px; margin-top: 4px;">Last seen: ${new Date(device.lastSeen).toLocaleString()}</p>
+            </div>
+            <div>
+              <span class="status-badge status-${device.status.toLowerCase()}">${device.status}</span>
+              <button class="btn btn-secondary" style="width: auto; padding: 8px 16px; margin-top: 8px; font-size: 14px;" onclick="window.selectDevice('${device.id}', '${device.deviceName}')">Manage</button>
+            </div>
+          `;
+          container.appendChild(deviceDiv);
+        });
+
+        // Update stats
+        const total = devices.length;
+        const active = devices.filter(d => d.status === 'NORMAL').length;
+        const stolen = devices.filter(d => d.status === 'STOLEN').length;
+        updateStats(total, active, stolen);
+      });
+    }
+
+    function updateStats(total, active, stolen) {
+      document.getElementById('totalDevices').textContent = total;
+      document.getElementById('activeDevices').textContent = active;
+      document.getElementById('stolenDevices').textContent = stolen;
+    }
+
+    window.selectDevice = function(deviceId, deviceName) {
+      selectedDeviceId = deviceId;
+      document.getElementById('selectedDeviceName').textContent = deviceName;
+      document.getElementById('controlPanel').classList.remove('hidden');
+    }
+
+    window.markAsStolen = async function() {
+      if (!selectedDeviceId) return;
+      if (!confirm('Are you sure you want to mark this device as STOLEN? This will activate tracking and camera capture.')) return;
+      
+      try {
+        await update(ref(database, `devices/${selectedDeviceId}`), {
+          status: 'STOLEN',
+          markedStolenAt: Date.now()
+        });
+        alert('Device marked as stolen. Tracking activated.');
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    window.lockDevice = async function() {
+      if (!selectedDeviceId) return;
+      if (!confirm('Are you sure you want to lock this device?')) return;
+      
+      try {
+        await update(ref(database, `devices/${selectedDeviceId}`), {
+          status: 'LOCKED',
+          lockedAt: Date.now()
+        });
+        alert('Device locked successfully.');
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    window.markAsNormal = async function() {
+      if (!selectedDeviceId) return;
+      
+      try {
+        await update(ref(database, `devices/${selectedDeviceId}`), {
+          status: 'NORMAL'
+        });
+        alert('Device status reset to normal.');
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    window.handleLogout = async function() {
+      if (confirm('Are you sure you want to logout?')) {
+        await signOut(auth);
+      }
+    }
+  </script>
+</body>
+</html>
