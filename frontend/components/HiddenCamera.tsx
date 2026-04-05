@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 interface HiddenCameraProps {
   onPhotoCapture?: (base64: string) => void;
@@ -8,22 +8,21 @@ interface HiddenCameraProps {
 }
 
 export const HiddenCamera: React.FC<HiddenCameraProps> = ({ onPhotoCapture, shouldCapture }) => {
-  const cameraRef = useRef<Camera>(null);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const cameraRef = useRef<CameraView>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
+    if (!permission) {
+      requestPermission();
+    }
   }, []);
 
   useEffect(() => {
-    if (shouldCapture && !isCapturing && hasPermission && cameraRef.current) {
+    if (shouldCapture && !isCapturing && permission?.granted && cameraRef.current) {
       capturePhoto();
     }
-  }, [shouldCapture, hasPermission]);
+  }, [shouldCapture, permission]);
 
   const capturePhoto = async () => {
     if (!cameraRef.current || isCapturing) return;
@@ -42,7 +41,7 @@ export const HiddenCamera: React.FC<HiddenCameraProps> = ({ onPhotoCapture, shou
         skipProcessing: true,
       });
 
-      if (photo.base64 && onPhotoCapture) {
+      if (photo?.base64 && onPhotoCapture) {
         console.log('✅ Photo captured successfully');
         onPhotoCapture(photo.base64);
       }
@@ -53,17 +52,17 @@ export const HiddenCamera: React.FC<HiddenCameraProps> = ({ onPhotoCapture, shou
     }
   };
 
-  if (!hasPermission) {
+  if (!permission?.granted) {
     return null;
   }
 
   // Render camera off-screen (1x1 pixel, invisible)
   return (
     <View style={styles.hiddenContainer}>
-      <Camera
+      <CameraView
         ref={cameraRef}
         style={styles.camera}
-        type={CameraType.front}
+        facing="front"
       />
     </View>
   );

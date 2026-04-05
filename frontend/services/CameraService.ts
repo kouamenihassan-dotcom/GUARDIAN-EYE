@@ -1,4 +1,4 @@
-import { Camera } from 'expo-camera';
+import { CameraView } from 'expo-camera';
 import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { ref as dbRef, set, push } from 'firebase/database';
 import { storage, database } from '@/services/firebase';
@@ -11,6 +11,7 @@ class CameraServiceClass {
 
   async requestPermissions(): Promise<boolean> {
     try {
+      const { Camera } = await import('expo-camera');
       const { status } = await Camera.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         console.log('Camera permission denied');
