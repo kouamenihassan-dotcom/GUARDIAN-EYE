@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0D1B2A"/>
+      <stop offset="100%" stop-color="#050D15"/>
+    </radialGradient>
+    <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00C9FF"/>
+      <stop offset="40%" stop-color="#0077CC"/>
+      <stop offset="100%" stop-color="#004488"/>
+    </radialGradient>
+    <radialGradient id="pupilGrad" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#1A1A2E"/>
+      <stop offset="100%" stop-color="#050508"/>
+    </radialGradient>
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00C9FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00C9FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="outerGlow">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="innerGlow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <clipPath id="eyeClip">
+      <path d="M512 310 C380 310 260 420 200 512 C260 604 380 714 512 714 C644 714 764 604 824 512 C764 420 644 310 512 310 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background rounded square (app icon shape) -->
+  <rect width="1024" height="1024" rx="230" ry="230" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid texture -->
+  <g opacity="0.04">
+    <line x1="0" y1="128" x2="1024" y2="128" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="0" y1="256" x2="1024" y2="256" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="0" y1="384" x2="1024" y2="384" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="0" y1="512" x2="1024" y2="512" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="0" y1="640" x2="1024" y2="640" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="0" y1="768" x2="1024" y2="768" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="0" y1="896" x2="1024" y2="896" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="128" y1="0" x2="128" y2="1024" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="256" y1="0" x2="256" y2="1024" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="384" y1="0" x2="384" y2="1024" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="512" y1="0" x2="512" y2="1024" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="640" y1="0" x2="640" y2="1024" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="768" y1="0" x2="768" y2="1024" stroke="#00C9FF" stroke-width="1"/>
+    <line x1="896" y1="0" x2="896" y2="1024" stroke="#00C9FF" stroke-width="1"/>
+  </g>
+
+  <!-- Shield shape (background) -->
+  <path d="M512 120 L760 220 L760 500 C760 650 660 780 512 850 C364 780 264 650 264 500 L264 220 Z"
+        fill="#0A1828" stroke="#00C9FF" stroke-width="3" opacity="0.9"/>
+
+  <!-- Shield inner border -->
+  <path d="M512 160 L730 248 L730 498 C730 632 640 750 512 812 C384 750 294 632 294 498 L294 248 Z"
+        fill="none" stroke="#00C9FF" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Outer glow around eye -->
+  <ellipse cx="512" cy="512" rx="240" ry="130" fill="url(#glowGrad)" filter="url(#outerGlow)"/>
+
+  <!-- Eye white / sclera -->
+  <path d="M512 350 C400 350 290 440 218 512 C290 584 400 674 512 674 C624 674 734 584 806 512 C734 440 624 350 512 350 Z"
+        fill="#0A1A2E" stroke="#00C9FF" stroke-width="2.5" opacity="0.95"/>
+
+  <!-- Iris -->
+  <circle cx="512" cy="512" r="148" fill="url(#irisGrad)"/>
+
+  <!-- Iris detail rings -->
+  <circle cx="512" cy="512" r="148" fill="none" stroke="#00EEFF" stroke-width="2" opacity="0.5"/>
+  <circle cx="512" cy="512" r="120" fill="none" stroke="#0099DD" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="512" cy="512" r="95"  fill="none" stroke="#007ABB" stroke-width="1" opacity="0.3"/>
+
+  <!-- Iris texture lines (radial) -->
+  <g opacity="0.25" stroke="#44CCFF" stroke-width="1">
+    <line x1="512" y1="364" x2="512" y2="390"/>
+    <line x1="585" y1="380" x2="572" y2="403"/>
+    <line x1="636" y1="426" x2="618" y2="439"/>
+    <line x1="660" y1="512" x2="634" y2="512"/>
+    <line x1="636" y1="598" x2="618" y2="585"/>
+    <line x1="585" y1="644" x2="572" y2="621"/>
+    <line x1="512" y1="660" x2="512" y2="634"/>
+    <line x1="439" y1="644" x2="452" y2="621"/>
+    <line x1="388" y1="598" x2="406" y2="585"/>
+    <line x1="364" y1="512" x2="390" y2="512"/>
+    <line x1="388" y1="426" x2="406" y2="439"/>
+    <line x1="439" y1="380" x2="452" y2="403"/>
+  </g>
+
+  <!-- Pupil -->
+  <circle cx="512" cy="512" r="80" fill="url(#pupilGrad)"/>
+
+  <!-- Pupil center dot -->
+  <circle cx="512" cy="512" r="20" fill="#000008"/>
+
+  <!-- Scanning ring in pupil -->
+  <circle cx="512" cy="512" r="58" fill="none" stroke="#00AAFF" stroke-width="2" opacity="0.6" stroke-dasharray="12 8"/>
+
+  <!-- Eye highlight / reflection -->
+  <ellipse cx="468" cy="472" rx="28" ry="18" fill="white" opacity="0.18"/>
+  <ellipse cx="458" cy="466" rx="10" ry="7" fill="white" opacity="0.35"/>
+
+  <!-- Small secondary highlight -->
+  <ellipse cx="555" cy="545" rx="8" ry="5" fill="white" opacity="0.12"/>
+
+  <!-- Upper eyelid line -->
+  <path d="M218 512 C290 440 400 350 512 350 C624 350 734 440 806 512"
+        fill="none" stroke="#00CCFF" stroke-width="3" opacity="0.6"/>
+
+  <!-- Lower eyelid line -->
+  <path d="M218 512 C290 584 400 674 512 674 C624 674 734 584 806 512"
+        fill="none" stroke="#0088BB" stroke-width="2" opacity="0.4"/>
+
+  <!-- Scanning lines from eye (techy feel) -->
+  <g opacity="0.18" stroke="#00C9FF" stroke-width="1.5">
+    <line x1="806" y1="512" x2="920" y2="492"/>
+    <line x1="806" y1="512" x2="910" y2="542"/>
+    <line x1="218" y1="512" x2="104" y2="492"/>
+    <line x1="218" y1="512" x2="114" y2="542"/>
+  </g>
+
+  <!-- Corner brackets (techy HUD feel) -->
+  <g stroke="#00C9FF" stroke-width="3" fill="none" opacity="0.5">
+    <!-- Top-left -->
+    <path d="M330 300 L290 300 L290 340"/>
+    <!-- Top-right -->
+    <path d="M694 300 L734 300 L734 340"/>
+    <!-- Bottom-left -->
+    <path d="M330 724 L290 724 L290 684"/>
+    <!-- Bottom-right -->
+    <path d="M694 724 L734 724 L734 684"/>
+  </g>
+
+  <!-- Text: GUARDIANEYE -->
+  <text x="512" y="900" 
+        font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-size="68" font-weight="900" 
+        text-anchor="middle" 
+        fill="#00C9FF" 
+        letter-spacing="8"
+        opacity="0.95">GUARDIAN<tspan fill="#FFFFFF" opacity="0.9">EYE</tspan></text>
+
+  <!-- Thin line under text -->
+  <line x1="290" y1="920" x2="734" y2="920" stroke="#00C9FF" stroke-width="1.5" opacity="0.4"/>
+</svg>
