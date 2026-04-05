@@ -11,6 +11,11 @@ class DeviceMonitorClass {
   private currentStatus: 'NORMAL' | 'STOLEN' | 'LOCKED' = 'NORMAL';
   private deviceId: string | null = null;
   private unsubscribe: (() => void) | null = null;
+  private onCameraCapture: (() => void) | null = null;
+
+  setOnCameraCapture(callback: () => void) {
+    this.onCameraCapture = callback;
+  }
 
   async getDeviceId(): Promise<string> {
     if (this.deviceId) return this.deviceId;
@@ -62,10 +67,14 @@ class DeviceMonitorClass {
     if (newStatus === 'STOLEN') {
       console.log('🚨 Device marked as STOLEN!');
       console.log('📍 Starting GPS tracking...');
-      console.log('📸 Capturing photo...');
+      console.log('📸 Triggering camera capture...');
 
       await LocationService.startTracking(userId);
-      await CameraService.captureAndUpload(deviceId);
+      
+      // Trigger camera capture via callback
+      if (this.onCameraCapture) {
+        this.onCameraCapture();
+      }
     } else if (oldStatus === 'STOLEN' && newStatus === 'NORMAL') {
       console.log('✅ Device marked as NORMAL - stopping tracking');
       LocationService.stopTracking();

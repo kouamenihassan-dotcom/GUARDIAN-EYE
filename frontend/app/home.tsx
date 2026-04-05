@@ -11,9 +11,12 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { database } from '@/services/firebase';
 import { DeviceMonitor } from '@/services/DeviceMonitor';
+import { NotificationService } from '@/services/NotificationService';
+import { CameraService } from '@/services/CameraService';
+import { HiddenCamera } from '@/components/HiddenCamera';
 import * as Device from 'expo-device';
 import * as Application from 'expo-application';
 import { Platform } from 'react-native';
@@ -33,6 +36,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shouldCapturePhoto, setShouldCapturePhoto] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -41,6 +45,7 @@ export default function HomeScreen() {
     }
 
     loadDeviceInfo();
+    initializeServices();
     
     // Start device monitoring for status changes
     DeviceMonitor.startMonitoring(user.uid);
@@ -50,6 +55,37 @@ export default function HomeScreen() {
       DeviceMonitor.stopMonitoring();
     };
   }, [user]);
+
+  const initializeServices = async () => {
+    // Initialize notifications
+    await NotificationService.requestPermissions();
+    const deviceId = Platform.OS === 'web'
+      ? 'web_' + navigator.userAgent.slice(0, 50).replace(/[^a-zA-Z0-9]/g, '')
+      : Application.androidId || Device.modelId || 'unknown';
+    
+    if (user) {
+      await NotificationService.registerPushToken(deviceId, user.uid);
+    }
+    
+    NotificationService.setupNotificationListeners();
+    
+    // Register camera capture callback
+    DeviceMonitor.setOnCameraCapture(() => {
+      setShouldCapturePhoto(true);
+    });
+  };
+
+  const handlePhotoCapture = async (base64: string) => {
+    console.log('📸 Photo captured from HiddenCamera');
+    await CameraService.onPhotoCaptured(base64);
+    setShouldCapturePhoto(false);
+    
+    // Send notification
+    await NotificationService.sendLocalNotification(
+      'Photo Captured',
+      'Intruder photo captured successfully'
+    );
+  };
 
   // Check if device is locked and redirect
   useEffect(() => {
@@ -133,6 +169,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Hidden Camera Component */}
+      <HiddenCamera 
+        shouldCapture={shouldCapturePhoto}
+        onPhotoCapture={handlePhotoCapture}
+      />
+      
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Guardian Eye</Text>

