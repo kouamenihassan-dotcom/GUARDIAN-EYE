@@ -1,22 +1,36 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Guardian Eye",
+    "slug": "guardian-eye",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "guardianeye",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Take photos when device is stolen",
+        "NSLocationWhenInUseUsageDescription": "Track device location for security",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Track device location in background when stolen",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000"
+        "backgroundColor": "#0D1117"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +45,19 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "backgroundColor": "#0D1117"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Guardian Eye to track your device location for security purposes."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Guardian Eye to take photos when device is marked as stolen."
         }
       ]
     ],

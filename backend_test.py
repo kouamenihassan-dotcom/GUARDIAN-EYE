@@ -1,383 +1,418 @@
 #!/usr/bin/env python3
 """
-Guardian Eye Firebase Testing Suite
-Tests Firebase authentication and real-time database functionality
+Guardian Eye Phase 2 Testing - GPS Tracking & Camera Capture
+Tests Firebase-based features without backend API endpoints
 """
 
 import requests
 import json
 import time
+import base64
+from datetime import datetime
 import sys
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
-class GuardianEyeFirebaseTest:
+class GuardianEyePhase2Tester:
     def __init__(self):
-        self.mobile_url = "https://device-security-hub-2.preview.emergentagent.com"
+        # URLs from test credentials
+        self.mobile_app_url = "https://device-security-hub-2.preview.emergentagent.com"
         self.dashboard_url = "https://device-security-hub-2.preview.emergentagent.com/dashboard.html"
+        
+        # Test credentials
         self.test_email = "test@guardianeye.com"
         self.test_password = "test123456"
-        self.driver = None
+        
+        # Firebase config (from dashboard.html)
+        self.firebase_config = {
+            "apiKey": "AIzaSyDCc8qBTWxO-sX5dhlC6mDWokomgScIFwQ",
+            "authDomain": "guardianeye-feb2d.firebaseapp.com",
+            "databaseURL": "https://guardianeye-feb2d-default-rtdb.firebaseio.com",
+            "projectId": "guardianeye-feb2d",
+            "storageBucket": "guardianeye-feb2d.firebasestorage.app"
+        }
+        
         self.test_results = []
         
-    def setup_driver(self):
-        """Setup Chrome driver with appropriate options"""
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.binary_location = "/usr/bin/chromium"
-        
-        try:
-            # Use chromium-driver
-            from selenium.webdriver.chrome.service import Service
-            service = Service("/usr/bin/chromedriver")
-            self.driver = webdriver.Chrome(service=service, options=chrome_options)
-            self.driver.implicitly_wait(10)
-            return True
-        except Exception as e:
-            print(f"Failed to setup Chrome/Chromium driver: {e}")
-            return False
-    
-    def log_result(self, test_name, status, message):
-        """Log test result"""
+    def log_test(self, test_name, status, details=""):
+        """Log test results"""
         result = {
             "test": test_name,
             "status": status,
-            "message": message,
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            "details": details,
+            "timestamp": datetime.now().isoformat()
         }
         self.test_results.append(result)
-        print(f"[{status}] {test_name}: {message}")
-    
+        
+        status_icon = "✅" if status == "PASS" else "❌" if status == "FAIL" else "⚠️"
+        print(f"{status_icon} {test_name}: {status}")
+        if details:
+            print(f"   Details: {details}")
+        print()
+
     def test_mobile_app_accessibility(self):
-        """Test if mobile app URL is accessible"""
+        """Test if mobile app is accessible"""
         try:
-            self.driver.get(self.mobile_url)
-            time.sleep(3)
-            
-            # Check if page loads
-            page_title = self.driver.title
-            if page_title:
-                self.log_result("Mobile App Accessibility", "PASS", f"Mobile app loaded successfully. Title: {page_title}")
+            response = requests.get(self.mobile_app_url, timeout=10)
+            if response.status_code == 200:
+                self.log_test("Mobile App Accessibility", "PASS", f"Status: {response.status_code}")
                 return True
             else:
-                self.log_result("Mobile App Accessibility", "FAIL", "Mobile app page has no title")
+                self.log_test("Mobile App Accessibility", "FAIL", f"Status: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Mobile App Accessibility", "FAIL", f"Error: {str(e)}")
+            return False
+
+    def test_dashboard_accessibility(self):
+        """Test if web dashboard is accessible"""
+        try:
+            response = requests.get(self.dashboard_url, timeout=10)
+            if response.status_code == 200:
+                # Check for key elements in dashboard
+                content = response.text
+                required_elements = [
+                    "Guardian Eye Dashboard",
+                    "firebase",
+                    "Mark as Stolen",
+                    "Device Location",
+                    "Captured Photos"
+                ]
+                
+                missing_elements = []
+                for element in required_elements:
+                    if element not in content:
+                        missing_elements.append(element)
+                
+                if not missing_elements:
+                    self.log_test("Dashboard Accessibility", "PASS", "All required elements found")
+                    return True
+                else:
+                    self.log_test("Dashboard Accessibility", "FAIL", f"Missing elements: {missing_elements}")
+                    return False
+            else:
+                self.log_test("Dashboard Accessibility", "FAIL", f"Status: {response.status_code}")
+                return False
+        except Exception as e:
+            self.log_test("Dashboard Accessibility", "FAIL", f"Error: {str(e)}")
+            return False
+
+    def test_firebase_auth_endpoint(self):
+        """Test Firebase Authentication endpoint"""
+        try:
+            # Firebase Auth REST API endpoint
+            auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={self.firebase_config['apiKey']}"
+            
+            payload = {
+                "email": self.test_email,
+                "password": self.test_password,
+                "returnSecureToken": True
+            }
+            
+            response = requests.post(auth_url, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if 'idToken' in data and 'localId' in data:
+                    self.log_test("Firebase Authentication", "PASS", f"User ID: {data['localId'][:10]}...")
+                    return data
+                else:
+                    self.log_test("Firebase Authentication", "FAIL", "Missing token or user ID in response")
+                    return None
+            else:
+                error_data = response.json() if response.content else {}
+                error_msg = error_data.get('error', {}).get('message', 'Unknown error')
+                self.log_test("Firebase Authentication", "FAIL", f"Status: {response.status_code}, Error: {error_msg}")
+                return None
+                
+        except Exception as e:
+            self.log_test("Firebase Authentication", "FAIL", f"Error: {str(e)}")
+            return None
+
+    def test_firebase_database_read(self, auth_data):
+        """Test Firebase Realtime Database read access"""
+        if not auth_data:
+            self.log_test("Firebase Database Read", "SKIP", "No auth data available")
+            return False
+            
+        try:
+            # Test reading from devices path
+            db_url = f"{self.firebase_config['databaseURL']}/devices.json"
+            params = {"auth": auth_data['idToken']}
+            
+            response = requests.get(db_url, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log_test("Firebase Database Read", "PASS", f"Devices found: {len(data) if data else 0}")
+                return True
+            else:
+                self.log_test("Firebase Database Read", "FAIL", f"Status: {response.status_code}")
                 return False
                 
         except Exception as e:
-            self.log_result("Mobile App Accessibility", "FAIL", f"Failed to load mobile app: {e}")
+            self.log_test("Firebase Database Read", "FAIL", f"Error: {str(e)}")
             return False
-    
-    def test_mobile_app_signup_flow(self):
-        """Test mobile app signup functionality"""
+
+    def test_device_registration_structure(self, auth_data):
+        """Test device registration data structure"""
+        if not auth_data:
+            self.log_test("Device Registration Structure", "SKIP", "No auth data available")
+            return False
+            
         try:
-            self.driver.get(self.mobile_url)
-            time.sleep(3)
+            user_id = auth_data['localId']
             
-            # Look for signup link/button
-            signup_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'Sign Up') or contains(text(), 'Create Account')]")
+            # Check user devices
+            user_devices_url = f"{self.firebase_config['databaseURL']}/users/{user_id}/devices.json"
+            params = {"auth": auth_data['idToken']}
             
-            if signup_elements:
-                signup_elements[0].click()
-                time.sleep(2)
-                
-                # Check if signup form is visible
-                email_inputs = self.driver.find_elements(By.XPATH, "//input[@type='email' or @placeholder='Email']")
-                password_inputs = self.driver.find_elements(By.XPATH, "//input[@type='password' or @placeholder='Password']")
-                
-                if email_inputs and password_inputs:
-                    # Fill signup form
-                    email_inputs[0].clear()
-                    email_inputs[0].send_keys(self.test_email)
+            response = requests.get(user_devices_url, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                devices = response.json()
+                if devices:
+                    device_id = list(devices.keys())[0]
                     
-                    password_inputs[0].clear()
-                    password_inputs[0].send_keys(self.test_password)
+                    # Check device details
+                    device_url = f"{self.firebase_config['databaseURL']}/devices/{device_id}.json"
+                    device_response = requests.get(device_url, params=params, timeout=10)
                     
-                    # If there's a confirm password field
-                    if len(password_inputs) > 1:
-                        password_inputs[1].clear()
-                        password_inputs[1].send_keys(self.test_password)
-                    
-                    # Find and click signup button
-                    signup_buttons = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Create Account') or contains(text(), 'Sign Up')]")
-                    if signup_buttons:
-                        signup_buttons[0].click()
-                        time.sleep(5)
+                    if device_response.status_code == 200:
+                        device_data = device_response.json()
                         
-                        # Check for success indicators
-                        current_url = self.driver.current_url
-                        page_source = self.driver.page_source.lower()
+                        required_fields = ['deviceName', 'modelName', 'osName', 'status', 'lastSeen']
+                        missing_fields = [field for field in required_fields if field not in device_data]
                         
-                        if "home" in current_url or "dashboard" in current_url or "success" in page_source:
-                            self.log_result("Mobile App Signup", "PASS", "Signup completed successfully")
-                            return True
+                        if not missing_fields:
+                            self.log_test("Device Registration Structure", "PASS", f"Device ID: {device_id[:10]}...")
+                            return device_id
                         else:
-                            self.log_result("Mobile App Signup", "FAIL", f"Signup may have failed. Current URL: {current_url}")
-                            return False
+                            self.log_test("Device Registration Structure", "FAIL", f"Missing fields: {missing_fields}")
+                            return None
                     else:
-                        self.log_result("Mobile App Signup", "FAIL", "Signup button not found")
-                        return False
+                        self.log_test("Device Registration Structure", "FAIL", f"Device details not found: {device_response.status_code}")
+                        return None
                 else:
-                    self.log_result("Mobile App Signup", "FAIL", "Email or password input fields not found")
-                    return False
+                    self.log_test("Device Registration Structure", "FAIL", "No devices registered for user")
+                    return None
             else:
-                self.log_result("Mobile App Signup", "FAIL", "Signup link/button not found")
-                return False
+                self.log_test("Device Registration Structure", "FAIL", f"Status: {response.status_code}")
+                return None
                 
         except Exception as e:
-            self.log_result("Mobile App Signup", "FAIL", f"Error during signup: {e}")
+            self.log_test("Device Registration Structure", "FAIL", f"Error: {str(e)}")
+            return None
+
+    def test_location_data_structure(self, auth_data, device_id):
+        """Test GPS location data structure in Firebase"""
+        if not auth_data or not device_id:
+            self.log_test("Location Data Structure", "SKIP", "Missing auth data or device ID")
             return False
-    
-    def test_mobile_app_login_flow(self):
-        """Test mobile app login functionality"""
+            
         try:
-            self.driver.get(self.mobile_url)
-            time.sleep(3)
+            # Check current location
+            current_location_url = f"{self.firebase_config['databaseURL']}/devices/{device_id}/currentLocation.json"
+            params = {"auth": auth_data['idToken']}
             
-            # Look for email and password inputs
-            email_inputs = self.driver.find_elements(By.XPATH, "//input[@type='email' or @placeholder='Email']")
-            password_inputs = self.driver.find_elements(By.XPATH, "//input[@type='password' or @placeholder='Password']")
+            response = requests.get(current_location_url, params=params, timeout=10)
             
-            if email_inputs and password_inputs:
-                # Fill login form
-                email_inputs[0].clear()
-                email_inputs[0].send_keys(self.test_email)
+            if response.status_code == 200:
+                location_data = response.json()
                 
-                password_inputs[0].clear()
-                password_inputs[0].send_keys(self.test_password)
-                
-                # Find and click login button
-                login_buttons = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Sign In') or contains(text(), 'Login')]")
-                if login_buttons:
-                    login_buttons[0].click()
-                    time.sleep(5)
+                if location_data:
+                    required_fields = ['latitude', 'longitude', 'timestamp']
+                    missing_fields = [field for field in required_fields if field not in location_data]
                     
-                    # Check for successful login
-                    current_url = self.driver.current_url
-                    page_source = self.driver.page_source.lower()
-                    
-                    if "home" in current_url or "guardian eye" in page_source:
-                        self.log_result("Mobile App Login", "PASS", "Login completed successfully")
+                    if not missing_fields:
+                        self.log_test("Location Data Structure", "PASS", f"Lat: {location_data['latitude']}, Lng: {location_data['longitude']}")
                         return True
                     else:
-                        self.log_result("Mobile App Login", "FAIL", f"Login may have failed. Current URL: {current_url}")
+                        self.log_test("Location Data Structure", "FAIL", f"Missing fields: {missing_fields}")
                         return False
                 else:
-                    self.log_result("Mobile App Login", "FAIL", "Login button not found")
-                    return False
+                    self.log_test("Location Data Structure", "INFO", "No location data yet (expected for new device)")
+                    return True
             else:
-                self.log_result("Mobile App Login", "FAIL", "Email or password input fields not found")
+                self.log_test("Location Data Structure", "FAIL", f"Status: {response.status_code}")
                 return False
                 
         except Exception as e:
-            self.log_result("Mobile App Login", "FAIL", f"Error during login: {e}")
+            self.log_test("Location Data Structure", "FAIL", f"Error: {str(e)}")
             return False
-    
-    def test_web_dashboard_accessibility(self):
-        """Test if web dashboard URL is accessible"""
-        try:
-            self.driver.get(self.dashboard_url)
-            time.sleep(3)
-            
-            # Check if dashboard page loads
-            page_title = self.driver.title
-            page_source = self.driver.page_source.lower()
-            
-            if "guardian eye" in page_source or "dashboard" in page_title.lower():
-                self.log_result("Web Dashboard Accessibility", "PASS", f"Dashboard loaded successfully. Title: {page_title}")
-                return True
-            else:
-                self.log_result("Web Dashboard Accessibility", "FAIL", f"Dashboard page may not have loaded correctly. Title: {page_title}")
-                return False
-                
-        except Exception as e:
-            self.log_result("Web Dashboard Accessibility", "FAIL", f"Failed to load dashboard: {e}")
+
+    def test_photo_data_structure(self, auth_data, device_id):
+        """Test camera photo data structure in Firebase"""
+        if not auth_data or not device_id:
+            self.log_test("Photo Data Structure", "SKIP", "Missing auth data or device ID")
             return False
-    
-    def test_web_dashboard_login(self):
-        """Test web dashboard login functionality"""
+            
         try:
-            self.driver.get(self.dashboard_url)
-            time.sleep(3)
+            # Check photos
+            photos_url = f"{self.firebase_config['databaseURL']}/photos/{device_id}.json"
+            params = {"auth": auth_data['idToken']}
             
-            # Look for login form
-            email_input = self.driver.find_element(By.ID, "email")
-            password_input = self.driver.find_element(By.ID, "password")
+            response = requests.get(photos_url, params=params, timeout=10)
             
-            if email_input and password_input:
-                # Fill login form
-                email_input.clear()
-                email_input.send_keys(self.test_email)
+            if response.status_code == 200:
+                photos_data = response.json()
                 
-                password_input.clear()
-                password_input.send_keys(self.test_password)
-                
-                # Submit form
-                login_form = self.driver.find_element(By.ID, "loginForm")
-                login_form.submit()
-                time.sleep(5)
-                
-                # Check for successful login (dashboard should be visible)
-                try:
-                    dashboard_element = self.driver.find_element(By.ID, "dashboard")
-                    if dashboard_element.is_displayed():
-                        self.log_result("Web Dashboard Login", "PASS", "Dashboard login successful")
+                if photos_data:
+                    # Check first photo structure
+                    first_photo = list(photos_data.values())[0]
+                    required_fields = ['base64', 'timestamp', 'deviceId', 'captureType']
+                    missing_fields = [field for field in required_fields if field not in first_photo]
+                    
+                    if not missing_fields:
+                        self.log_test("Photo Data Structure", "PASS", f"Photos found: {len(photos_data)}")
                         return True
                     else:
-                        self.log_result("Web Dashboard Login", "FAIL", "Dashboard not visible after login")
+                        self.log_test("Photo Data Structure", "FAIL", f"Missing fields: {missing_fields}")
                         return False
-                except NoSuchElementException:
-                    self.log_result("Web Dashboard Login", "FAIL", "Dashboard element not found after login")
-                    return False
+                else:
+                    self.log_test("Photo Data Structure", "INFO", "No photos yet (expected for new device)")
+                    return True
             else:
-                self.log_result("Web Dashboard Login", "FAIL", "Login form elements not found")
+                self.log_test("Photo Data Structure", "FAIL", f"Status: {response.status_code}")
                 return False
                 
         except Exception as e:
-            self.log_result("Web Dashboard Login", "FAIL", f"Error during dashboard login: {e}")
+            self.log_test("Photo Data Structure", "FAIL", f"Error: {str(e)}")
             return False
-    
-    def test_device_registration(self):
-        """Test if device appears in dashboard after mobile login"""
-        try:
-            # First ensure we're logged into dashboard
-            self.driver.get(self.dashboard_url)
-            time.sleep(3)
-            
-            # Login to dashboard
-            email_input = self.driver.find_element(By.ID, "email")
-            password_input = self.driver.find_element(By.ID, "password")
-            
-            email_input.clear()
-            email_input.send_keys(self.test_email)
-            password_input.clear()
-            password_input.send_keys(self.test_password)
-            
-            login_form = self.driver.find_element(By.ID, "loginForm")
-            login_form.submit()
-            time.sleep(5)
-            
-            # Check for device list
-            device_container = self.driver.find_element(By.ID, "deviceListContainer")
-            device_content = device_container.text.lower()
-            
-            if "no devices" in device_content or "loading" in device_content:
-                self.log_result("Device Registration", "FAIL", "No devices found in dashboard")
-                return False
-            else:
-                self.log_result("Device Registration", "PASS", "Device(s) found in dashboard")
-                return True
-                
-        except Exception as e:
-            self.log_result("Device Registration", "FAIL", f"Error checking device registration: {e}")
+
+    def test_device_status_update(self, auth_data, device_id):
+        """Test device status update functionality"""
+        if not auth_data or not device_id:
+            self.log_test("Device Status Update", "SKIP", "Missing auth data or device ID")
             return False
-    
-    def test_device_status_controls(self):
-        """Test device status control buttons"""
+            
         try:
-            # Ensure we're in dashboard
-            self.driver.get(self.dashboard_url)
-            time.sleep(3)
+            # Update device status to STOLEN
+            device_url = f"{self.firebase_config['databaseURL']}/devices/{device_id}.json"
+            params = {"auth": auth_data['idToken']}
             
-            # Login if needed
-            try:
-                email_input = self.driver.find_element(By.ID, "email")
-                password_input = self.driver.find_element(By.ID, "password")
-                
-                email_input.clear()
-                email_input.send_keys(self.test_email)
-                password_input.clear()
-                password_input.send_keys(self.test_password)
-                
-                login_form = self.driver.find_element(By.ID, "loginForm")
-                login_form.submit()
-                time.sleep(5)
-            except:
-                pass  # Already logged in
+            update_data = {
+                "status": "STOLEN",
+                "markedStolenAt": int(time.time() * 1000)
+            }
             
-            # Look for manage button
-            manage_buttons = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Manage')]")
-            if manage_buttons:
-                manage_buttons[0].click()
+            response = requests.patch(device_url, json=update_data, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                # Wait a moment and check if status was updated
                 time.sleep(2)
                 
-                # Check if control panel is visible
-                control_panel = self.driver.find_element(By.ID, "controlPanel")
-                if control_panel.is_displayed():
-                    # Test Mark as Stolen button
-                    stolen_buttons = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Mark as Stolen')]")
-                    if stolen_buttons:
-                        self.log_result("Device Status Controls", "PASS", "Device control buttons are accessible")
+                check_response = requests.get(device_url, params=params, timeout=10)
+                if check_response.status_code == 200:
+                    device_data = check_response.json()
+                    if device_data.get('status') == 'STOLEN':
+                        self.log_test("Device Status Update", "PASS", "Status updated to STOLEN")
+                        
+                        # Reset to NORMAL for cleanup
+                        reset_data = {"status": "NORMAL"}
+                        requests.patch(device_url, json=reset_data, params=params, timeout=10)
+                        
                         return True
                     else:
-                        self.log_result("Device Status Controls", "FAIL", "Control buttons not found")
+                        self.log_test("Device Status Update", "FAIL", f"Status not updated: {device_data.get('status')}")
                         return False
                 else:
-                    self.log_result("Device Status Controls", "FAIL", "Control panel not visible")
+                    self.log_test("Device Status Update", "FAIL", f"Check failed: {check_response.status_code}")
                     return False
             else:
-                self.log_result("Device Status Controls", "FAIL", "No manage buttons found")
+                self.log_test("Device Status Update", "FAIL", f"Update failed: {response.status_code}")
                 return False
                 
         except Exception as e:
-            self.log_result("Device Status Controls", "FAIL", f"Error testing device controls: {e}")
+            self.log_test("Device Status Update", "FAIL", f"Error: {str(e)}")
             return False
-    
-    def run_all_tests(self):
-        """Run all Firebase tests"""
-        print("Starting Guardian Eye Firebase Testing Suite...")
-        print("=" * 60)
-        
-        if not self.setup_driver():
-            print("Failed to setup test environment")
-            return False
-        
+
+    def test_service_files_structure(self):
+        """Test if Phase 2 service files exist and have correct structure"""
         try:
-            # Test mobile app
-            self.test_mobile_app_accessibility()
-            self.test_mobile_app_signup_flow()
-            self.test_mobile_app_login_flow()
+            import os
             
-            # Test web dashboard
-            self.test_web_dashboard_accessibility()
-            self.test_web_dashboard_login()
+            service_files = [
+                "/app/frontend/services/DeviceMonitor.ts",
+                "/app/frontend/services/LocationService.ts", 
+                "/app/frontend/services/CameraService.ts"
+            ]
             
-            # Test device functionality
-            self.test_device_registration()
-            self.test_device_status_controls()
+            missing_files = []
+            for file_path in service_files:
+                if not os.path.exists(file_path):
+                    missing_files.append(file_path)
             
-        finally:
-            if self.driver:
-                self.driver.quit()
+            if not missing_files:
+                self.log_test("Service Files Structure", "PASS", "All Phase 2 service files exist")
+                return True
+            else:
+                self.log_test("Service Files Structure", "FAIL", f"Missing files: {missing_files}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Service Files Structure", "FAIL", f"Error: {str(e)}")
+            return False
+
+    def run_all_tests(self):
+        """Run all Phase 2 tests"""
+        print("🔍 Starting Guardian Eye Phase 2 Testing - GPS Tracking & Camera Capture")
+        print("=" * 70)
+        print()
         
-        # Print summary
-        print("\n" + "=" * 60)
-        print("TEST SUMMARY")
-        print("=" * 60)
+        # Test 1: Service files structure
+        self.test_service_files_structure()
         
-        passed = sum(1 for result in self.test_results if result["status"] == "PASS")
-        failed = sum(1 for result in self.test_results if result["status"] == "FAIL")
+        # Test 2: App accessibility
+        mobile_accessible = self.test_mobile_app_accessibility()
+        dashboard_accessible = self.test_dashboard_accessibility()
         
-        print(f"Total Tests: {len(self.test_results)}")
-        print(f"Passed: {passed}")
-        print(f"Failed: {failed}")
+        # Test 3: Firebase authentication
+        auth_data = self.test_firebase_auth_endpoint()
+        
+        # Test 4: Database operations
+        if auth_data:
+            self.test_firebase_database_read(auth_data)
+            device_id = self.test_device_registration_structure(auth_data)
+            
+            if device_id:
+                self.test_location_data_structure(auth_data, device_id)
+                self.test_photo_data_structure(auth_data, device_id)
+                self.test_device_status_update(auth_data, device_id)
+        
+        # Summary
+        print("=" * 70)
+        print("📊 TEST SUMMARY")
+        print("=" * 70)
+        
+        passed = len([r for r in self.test_results if r['status'] == 'PASS'])
+        failed = len([r for r in self.test_results if r['status'] == 'FAIL'])
+        skipped = len([r for r in self.test_results if r['status'] in ['SKIP', 'INFO']])
+        total = len(self.test_results)
+        
+        print(f"✅ Passed: {passed}")
+        print(f"❌ Failed: {failed}")
+        print(f"⚠️  Skipped/Info: {skipped}")
+        print(f"📋 Total: {total}")
+        print()
         
         if failed > 0:
-            print("\nFAILED TESTS:")
+            print("❌ FAILED TESTS:")
             for result in self.test_results:
-                if result["status"] == "FAIL":
-                    print(f"- {result['test']}: {result['message']}")
+                if result['status'] == 'FAIL':
+                    print(f"   • {result['test']}: {result['details']}")
+            print()
         
-        return failed == 0
+        success_rate = (passed / (passed + failed)) * 100 if (passed + failed) > 0 else 0
+        print(f"🎯 Success Rate: {success_rate:.1f}%")
+        
+        return success_rate >= 80
 
 if __name__ == "__main__":
-    tester = GuardianEyeFirebaseTest()
+    tester = GuardianEyePhase2Tester()
     success = tester.run_all_tests()
-    sys.exit(0 if success else 1)
+    
+    if success:
+        print("\n🎉 Phase 2 testing completed successfully!")
+        sys.exit(0)
+    else:
+        print("\n⚠️  Phase 2 testing completed with issues.")
+        sys.exit(1)

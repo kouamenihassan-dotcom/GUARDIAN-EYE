@@ -359,6 +359,24 @@
           <button class="btn btn-danger" onclick="markAsStolen()">Mark as Stolen</button>
           <button class="btn btn-danger" onclick="lockDevice()">Lock Device</button>
           <button class="btn btn-secondary" onclick="markAsNormal()">Mark as Normal</button>
+          <button class="btn btn-danger" onclick="wipeDeviceData()">Wipe Data</button>
+        </div>
+      </div>
+
+      <!-- Location Map -->
+      <div id="locationSection" class="device-list hidden" style="margin-top: 24px;">
+        <h3 style="color: #fff; margin-bottom: 16px;">📍 Device Location</h3>
+        <div id="locationInfo" style="background: #0D1117; padding: 16px; border-radius: 8px; border: 1px solid #30363d;">
+          <p id="locationText" style="color: #6e7681;">No location data available yet</p>
+          <p id="locationTimestamp" style="color: #484f58; font-size: 12px; margin-top: 8px;"></p>
+        </div>
+      </div>
+
+      <!-- Photo Gallery -->
+      <div id="photoSection" class="device-list hidden" style="margin-top: 24px;">
+        <h3 style="color: #fff; margin-bottom: 16px;">📸 Captured Photos</h3>
+        <div id="photoGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+          <p style="color: #6e7681; grid-column: 1/-1; text-align: center; padding: 24px;">No photos captured yet</p>
         </div>
       </div>
     </div>
@@ -368,7 +386,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js';
-    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js';
+    import { getDatabase, ref, onValue, update, get, set, remove } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js';
 
     // Firebase configuration
     const firebaseConfig = {
@@ -489,6 +507,59 @@
       selectedDeviceId = deviceId;
       document.getElementById('selectedDeviceName').textContent = deviceName;
       document.getElementById('controlPanel').classList.remove('hidden');
+      
+      // Load location and photos for selected device
+      loadDeviceLocation(deviceId);
+      loadDevicePhotos(deviceId);
+      
+      document.getElementById('locationSection').classList.remove('hidden');
+      document.getElementById('photoSection').classList.remove('hidden');
+    }
+
+    async function loadDeviceLocation(deviceId) {
+      const deviceRef = ref(database, `devices/${deviceId}`);
+      
+      onValue(deviceRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.currentLocation) {
+          const loc = data.currentLocation;
+          document.getElementById('locationText').innerHTML = `
+            <strong>Latitude:</strong> ${loc.latitude.toFixed(6)}<br>
+            <strong>Longitude:</strong> ${loc.longitude.toFixed(6)}<br>
+            <strong>Accuracy:</strong> ${loc.accuracy ? loc.accuracy.toFixed(2) + 'm' : 'N/A'}
+          `;
+          document.getElementById('locationTimestamp').textContent = 
+            'Last updated: ' + new Date(loc.timestamp).toLocaleString();
+        } else {
+          document.getElementById('locationText').textContent = 'No location data available yet';
+          document.getElementById('locationTimestamp').textContent = '';
+        }
+      });
+    }
+
+    async function loadDevicePhotos(deviceId) {
+      const photosRef = ref(database, `photos/${deviceId}`);
+      
+      onValue(photosRef, (snapshot) => {
+        const photos = snapshot.val();
+        const gallery = document.getElementById('photoGallery');
+        
+        if (!photos) {
+          gallery.innerHTML = '<p style="color: #6e7681; grid-column: 1/-1; text-align: center; padding: 24px;">No photos captured yet</p>';
+          return;
+        }
+
+        gallery.innerHTML = '';
+        Object.entries(photos).reverse().forEach(([key, photo]) => {
+          const photoCard = document.createElement('div');
+          photoCard.style.cssText = 'background: #0D1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px;';
+          photoCard.innerHTML = `
+            <img src="data:image/png;base64,${photo.base64}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px; background: #21262d;">
+            <p style="color: #6e7681; font-size: 12px; margin-top: 8px;">${new Date(photo.timestamp).toLocaleString()}</p>
+          `;
+          gallery.appendChild(photoCard);
+        });
+      });
     }
 
     window.markAsStolen = async function() {
@@ -531,6 +602,43 @@
         alert('Device status reset to normal.');
       } catch (error) {
         alert('Error: ' + error.message);
+      }
+    }
+
+    window.wipeDeviceData = async function() {
+      if (!selectedDeviceId) return;
+      if (!confirm('⚠️ WARNING: This will permanently delete all location history and captured photos from this device. This action cannot be undone. Are you sure?')) return;
+      
+      try {
+        // Remove location history
+        await remove(ref(database, `locations/${selectedDeviceId}`));
+        
+        // Remove photos
+        await remove(ref(database, `photos/${selectedDeviceId}`));
+        
+        // Log wipe event
+        await set(ref(database, `wipeEvents/${selectedDeviceId}/${Date.now()}`), {
+          timestamp: Date.now(),
+          deviceId: selectedDeviceId,
+          action: 'DATA_WIPE'
+        });
+        
+        // Reset device
+        await update(ref(database, `devices/${selectedDeviceId}`), {
+          status: 'NORMAL',
+          currentLocation: null,
+          lastLocationUpdate: null,
+          markedStolenAt: null,
+          lockedAt: null,
+          dataWipedAt: Date.now()
+        });
+        
+        alert('✅ Device data wiped successfully. All location history and photos have been deleted.');
+        
+        // Reload the page to refresh data
+        window.location.reload();
+      } catch (error) {
+        alert('Error wiping data: ' + error.message);
       }
     }
 

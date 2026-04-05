@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ref, onValue, update } from 'firebase/database';
 import { database } from '@/services/firebase';
+import { DeviceMonitor } from '@/services/DeviceMonitor';
 import * as Device from 'expo-device';
 import * as Application from 'expo-application';
 import { Platform } from 'react-native';
@@ -40,7 +41,22 @@ export default function HomeScreen() {
     }
 
     loadDeviceInfo();
+    
+    // Start device monitoring for status changes
+    DeviceMonitor.startMonitoring(user.uid);
+    
+    // Cleanup on unmount
+    return () => {
+      DeviceMonitor.stopMonitoring();
+    };
   }, [user]);
+
+  // Check if device is locked and redirect
+  useEffect(() => {
+    if (deviceInfo && deviceInfo.status === 'LOCKED') {
+      router.replace('/lockscreen');
+    }
+  }, [deviceInfo]);
 
   const loadDeviceInfo = async () => {
     try {
@@ -188,6 +204,12 @@ export default function HomeScreen() {
             <Text style={styles.cardTitle}>Quick Actions</Text>
           </View>
 
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/settings')}>
+            <Ionicons name="settings" size={20} color="#58A6FF" />
+            <Text style={styles.actionButtonText}>Security Settings</Text>
+            <Ionicons name="chevron-forward" size={20} color="#6e7681" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.actionButton}>
             <Ionicons name="location" size={20} color="#58A6FF" />
             <Text style={styles.actionButtonText}>View Location History</Text>
@@ -197,12 +219,6 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.actionButton}>
             <Ionicons name="camera" size={20} color="#58A6FF" />
             <Text style={styles.actionButtonText}>View Captured Photos</Text>
-            <Ionicons name="chevron-forward" size={20} color="#6e7681" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="shield" size={20} color="#58A6FF" />
-            <Text style={styles.actionButtonText}>Security Settings</Text>
             <Ionicons name="chevron-forward" size={20} color="#6e7681" />
           </TouchableOpacity>
         </View>

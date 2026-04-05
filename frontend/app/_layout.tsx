@@ -23,6 +23,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ title: 'Sign Up' }} />
         <Stack.Screen name="home" options={{ headerShown: false }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="lockscreen" options={{ headerShown: false }} />
       </Stack>
     </AuthProvider>
   );
