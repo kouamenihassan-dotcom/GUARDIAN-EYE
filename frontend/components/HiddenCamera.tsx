@@ -32,31 +32,29 @@ export const HiddenCamera: React.FC<HiddenCameraProps> = ({ onPhotoCapture, shou
     try {
       console.log('📸 Capturing actual photo...');
       
-      // Wait a moment for camera to be ready
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.5,
         base64: true,
-        skipProcessing: true,
       });
 
       if (photo?.base64 && onPhotoCapture) {
-        console.log('✅ Photo captured successfully');
+        console.log('✅ Photo captured successfully - length:', photo.base64.length);
         onPhotoCapture(photo.base64);
       }
     } catch (error) {
-      console.error('Error capturing photo:', error);
+      console.error('❌ Error capturing photo:', error);
     } finally {
       setIsCapturing(false);
     }
   };
 
   if (!permission?.granted) {
+    console.log('⚠️ Camera permission not granted');
     return null;
   }
 
-  // Render camera off-screen (1x1 pixel, invisible)
   return (
     <View style={styles.hiddenContainer}>
       <CameraView
@@ -75,6 +73,7 @@ const styles = StyleSheet.create({
     height: 1,
     opacity: 0,
     overflow: 'hidden',
+    zIndex: -1000,
   },
   camera: {
     width: 1,
